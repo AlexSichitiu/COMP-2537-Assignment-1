@@ -44,10 +44,10 @@ app.get('/', (req, res) => {
     var html;
     if (req.session.authenticated){
         html = `
-        <form action='/member' method='get'>
+        <form action='/members' method='get'>
             <button type="submit">Members</button>
         </form> 
-        <form action='/logout' method='post'>
+        <form action='/logout' method='get'>
             <button type="submit">Log Out</button>
         </form> 
         `;
@@ -66,6 +66,7 @@ app.get('/', (req, res) => {
 
 app.get('/login', (req, res) => {
     var html = `
+    <div>Log in below.</div>
     <form action='/log_user_in' method='post'>
         <input name='email' type='email' placeholder='Email Address'> 
         <input name='password' type='password' placeholder='Password'>
@@ -93,19 +94,24 @@ app.get('/members', (req, res) => {
         var image = '/pet' + Math.floor(Math.random() * 3) + '.jpg';
         var html = `<div>Welcome ${req.session.firstname}</div>
             <img src=${image} height='500' width='500'>
-            <form action='/logout' method='post'>
+            <form action='/logout' method='get'>
                 <button type="submit">Log Out</button>
             </form> 
         `;
         res.send(html);
     } else {
-        res.redirect('/login')
+        res.redirect('/')
     }
+})
+
+app.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/');
 })
 
 app.get('*', (req, res) => {
     res.status(404);
-    res.send("<h1>404: File not found</h1>");
+    res.send("<h1>404: Nothing Here!</h1>");
 });
 
 app.post('/log_user_in', async (req, res) => {
@@ -171,8 +177,5 @@ app.post('/register_user', async (req, res) => {
     }
 })
 
-app.post('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/');
-})
+
     
