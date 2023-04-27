@@ -33,7 +33,7 @@ const users = database.db(mongodb_database).collection('users');
 app.use(session({
     secret: node_session_secret,
     store: MongoDBStore,
-    saveUnitialized: false,
+    saveUninitialized: false,
     resave: true
 }));
 
