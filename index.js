@@ -10,7 +10,7 @@ function adminAuthorization(req, res, next){
     if (req.session.usertype == "admin"){
         next();
     } else {
-        res.staus(403);
+        res.status(403);
         res.render('403', {navbar: navbar});
     }
 }
