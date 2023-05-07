@@ -7,10 +7,11 @@ function sessionAuthentication(req, res, next){
 }
 
 function adminAuthorization(req, res, next){
-    if (req.session.usertype = "admin"){
+    if (req.session.usertype == "admin"){
         next();
     } else {
-        res.redirect('/login')
+        res.staus(403);
+        res.render('403', {navbar: navbar});
     }
 }
 
@@ -22,13 +23,6 @@ require('dotenv').config();
 const joi = require('joi');
 const url = require('url');
 
-var navbarItems = [
-    {name: 'Home', link: '/'},
-    {name: 'Log In', link: '/login'},
-    {name: 'Sign Up', link: '/signup'},
-    {name: 'Members', link: '/members'},
-    {name: 'Admin', link: '/admin'}
-]
 var navbar = [];
 
 const node_session_secret = process.env.SESSION_SECRET;
@@ -62,12 +56,13 @@ app.use(session({
     resave: true
 }));
 
-function populateNavbar(req,res,next) {
+function populateNavbar(req, res, next) {
     navbar = [{name: 'Home', link: '/'}];
     if (req.session.authenticated){
         navbar.push({name: 'Members', link: '/members'}, 
                     {name: 'Log Out', link:'/logout'});
-        if (usertype = 'admin'){
+                    console.log(req.session.usertype);
+        if (req.session.usertype == 'admin'){
             navbar.push({name: 'Admin', link: '/admin'});
         }
     } else {
@@ -105,8 +100,8 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 })
 
-app.get('/admin', sessionAuthentication, adminAuthorization, (req, res) => {
-    // TODO get userList
+app.get('/admin', sessionAuthentication, adminAuthorization, async (req, res) => {
+    var userList = await users.find().project({email: 1, firstname: 1, type: 1, _id: 1}).toArray();
     res.render('admin', {users: userList, navbar: navbar});
     // TODO allow promotion and demotion
 })
@@ -129,7 +124,7 @@ app.post('/log_user_in', async (req, res) => {
         res.render('tryagain', {error: validCredentials.error.toString().substring(17), link: '/login', navbar: navbar});
     } else {
         var user = await users.find({email: email})
-            .project({email: 1, password: 1, firstname: 1, usertype: 1, _id: 1})
+            .project({email: 1, password: 1, firstname: 1, type: 1, _id: 1})
             .toArray();
         if (user.length != 1){
             res.render('tryagain', {error: 'Account does not exist for this email.', link: '/login', navbar: navbar});
@@ -138,7 +133,7 @@ app.post('/log_user_in', async (req, res) => {
             req.session.firstname = user[0].firstname;
             req.session.email = email;
             req.session.cookie.maxAge = sessionExpiryTime;
-            req.session.usertype = user[0].usertype;
+            req.session.usertype = user[0].type;
             res.redirect('/members');
         } else {
             res.render('tryagain', {error: 'Incorrect password', link: '/login', navbar: navbar});
@@ -175,6 +170,15 @@ app.post('/register_user', async (req, res) => {
         req.session.usertype = 'user';
         res.redirect('/members');
     }
+})
+
+app.post('/changetype', adminAuthorization, async (req, res) => {
+    var input = req.body.target;
+    var typeID = input.charAt(0);
+    var newType = typeID == 'U' ? 'user' : 'admin';
+    var subjectEmail = input.substring(1);
+    await users.findOneAndUpdate({email: subjectEmail}, {$set: {type: newType}});
+    res.redirect('/admin');
 })
 
 
